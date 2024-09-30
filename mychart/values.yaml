@@ -1,0 +1,86 @@
+app:
+  backend:
+    name: backend
+    replicas: 1
+    labels: backend
+    container:
+      name: backend
+    image: bighero01/backend-learning:2
+    configmap:
+      name: backend-config
+    secret:
+      name: db-secret
+  db:
+    name: db
+    service:
+      name: db-service
+    replicas: 1
+    image: mariadb:10.6.4-focal
+    container:
+      name: mariadb
+    args: ["--default-authentication-plugin=mysql_native_password"] 
+    configmap:
+     - name: db-config
+       key: MYSQL_DATABASE
+    secret:
+     - name: db-secret
+       key: DB_PASSWORD
+    pvc:
+      name: db-data-pvc
+  fe:
+    name: frontend
+    replicas: 1
+    image: bighero01/frontend-learning
+    container:
+      name: frontend
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 500Mi
+        cpu: 500m
+
+services:
+  - name: db-service
+    type: ClusterIP
+    label: db
+    port: 3306
+    clusterIP: None
+  - name: fe-service
+    type: ClusterIP
+    label: frontend
+    port: 3000
+  - name: be-service
+    type: ClusterIP
+    label: backend
+    port: 80
+
+configmaps:
+  - name: db-config
+    data: 
+        MYSQL_DATABASE: example
+  - name: backend-config
+    data:
+        DATABASE_DB: example
+        DATABASE_USER: root
+        DATABASE_PASSWORD: /run/secrets/db-password/DB_PASSWORD
+        DATABASE_HOST: db-service
+        NODE_ENV: development
+  
+secret:
+    name: db-secret
+    data:
+      DB_PASSWORD: ZGItYnRmNXE=
+
+pvc:
+  name: db-data-pvc
+  storage: 1Gi
+  storageClassName: standard
+
+pv:
+  name: db-pv
+  storage: 1Gi
+  path: /home/chithanh2001/k8s-learning/awesome-compose/react-express-mysql/volume
+  storageClassName: standard
+

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+data:
+  MYSQL_DATABASE: example
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  DATABASE_DB: example
+  DATABASE_USER: root
+  DATABASE_PASSWORD: /run/secrets/db-password/DB_PASSWORD
+  DATABASE_HOST: db-service
+  NODE_ENV: development

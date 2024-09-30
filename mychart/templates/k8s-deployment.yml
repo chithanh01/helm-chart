@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.backend.name}}
+spec:
+  replicas: {{ .Values.app.backend.replicas}}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.backend.labels}}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.backend.labels}}
+    spec:
+      containers:
+        - name: {{ .Values.app.backend.container.name}}
+          image: {{ .Values.app.backend.image}}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.app.backend.configmap.name}}
+          volumeMounts:
+            - name: db-password
+              mountPath: /run/secrets/db-password/
+      volumes:
+        - name: db-password
+          secret:
+            secretName: {{ .Values.app.backend.secret.name}}
+          
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.app.db.name}}
+spec:
+  serviceName: {{ .Values.app.db.service.name }}
+  replicas: {{ .Values.app.db.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.db.name}}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.db.name}}
+    spec:
+      containers:
+        - image: {{ .Values.app.db.image}}
+          name: {{ .Values.app.db.container.name}}
+          args: {{ .Values.app.db.args}}
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ index .Values.app.db.configmap 0 "name"}}
+                  key: {{ index .Values.app.db.configmap 0 "key"}}
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ index .Values.app.db.secret 0 "name"}}
+                  key: {{ index .Values.app.db.secret 0 "key"}}
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.app.db.pvc.name}}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.fe.name}}
+spec:
+  replicas: {{ .Values.app.fe.replicas}}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.fe.name}}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.fe.name}}
+    spec:
+      containers:
+        - image: {{ .Values.app.fe.image}}
+          name: {{ .Values.app.fe.container.name}}
+          resources:
+            requests:
+              memory: {{ .Values.app.fe.resources.requests.memory}}
+              cpu: {{ .Values.app.fe.resources.requests.cpu}}
+            limits:
+              memory:  {{ .Values.app.fe.resources.limits.memory}}
+              cpu: {{ .Values.app.fe.resources.limits.cpu}}

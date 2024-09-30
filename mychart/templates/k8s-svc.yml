@@ -1,0 +1,17 @@
+{{- range .Values.services }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+spec:
+  type: {{ .type }}
+  {{- if eq .clusterIP "None" }}
+  ClusterIP: None
+  {{- end }}
+  selector:
+    app: {{ .label }}
+  ports:
+    - port: {{ .port }}
+
+{{- end }}

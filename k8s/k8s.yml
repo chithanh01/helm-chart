@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: bighero01/backend-learning:2
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          volumeMounts:
+            - name: db-password
+              mountPath: /run/secrets/db-password/
+      volumes:
+        - name: db-password
+          secret:
+            secretName: db-secret
+          
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+spec:
+  serviceName: db-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - image: mariadb:10.6.4-focal
+          name: mariadb
+          args: ["--default-authentication-plugin=mysql_native_password"]
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: MYSQL_DATABASE
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: db-data-pvc  
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - image: bighero01/frontend-learning
+          name: frontend
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 500Mi
+              cpu: 500m
+          # args: ["sleep", "3000"]
+      #     volumeMounts:
+      #       - name: fe-source
+      #         mountPath: /code/src
+      # volumes:
+      #   - name: fe-source
+      #     hostPath:
+      #       path: /home/chithanh2001/k8s-learning/awesome-compose/react-express-mysql/frontend/src
+        # - name: node-modules
+        #   emptyDir: {}
+
+
+            
+
