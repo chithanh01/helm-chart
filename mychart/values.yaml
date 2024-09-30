@@ -84,3 +84,21 @@ pv:
   path: /home/chithanh2001/k8s-learning/awesome-compose/react-express-mysql/volume
   storageClassName: standard
 
+ingress:
+  name: my-ingress
+  namespace: default
+  ingressClassName: nginx
+  rules:
+    - host: fe-test.com
+      path: /
+      pathType: Prefix
+      service:
+        name: fe-service
+        port: 3000
+    - host: api-test.com
+      path: /
+      pathType: Prefix
+      service:
+        name: be-service
+        port: 80
+
